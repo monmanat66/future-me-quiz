@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Future Me — Quiz</title>
+<meta name="theme-color" content="#0b1326">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Softer, elegant fonts to match posters -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<canvas id="starfield" aria-hidden="true"></canvas>
+
+<main id="app" class="wrap">
+  <!-- Landing (header removed) -->
+  <section class="panel active" data-screen="landing">
+    <div class="hero hero-soft">
+      <img src="assets/images/logo_slowcombo.svg" alt="" class="hero-logo" aria-hidden="true">
+      <h1 class="logo-text soft">Future Me</h1>
+      <div class="divider"><span></span></div>
+      <p class="lede soft">
+        <strong>พลังแห่งอนาคตกำลังเรียกหา</strong> — ทุกคำตอบของคุณคือร่องรอยของความฝันที่กำลังเติบโตเป็นความจริง
+        อย่ากลัวที่จะก้าว เพราะทุกก้าวคือพลังที่สร้างเส้นทางของคุณเอง<br>
+        อนาคตไม่ได้ถูกกำหนดโดยโชคชะตา แต่มาจากความเชื่อในใจของคุณ
+        วันนี้…คุณได้เริ่มต้น <em>ปลุกพลังในตัวเอง</em> แล้ว
+      </p>
+      <button id="startBtn" class="btn xl primary">เริ่มทำแบบทดสอบ</button>
+      <p class="event-note">Future Me by OOOMarket • At Slowcombo 31 Oct – 2 Nov</p>
+    </div>
+  </section>
+
+  <!-- Quiz -->
+  <section class="panel" data-screen="quiz" aria-live="polite">
+    <div class="wizard">
+      <div class="wizard-head">
+        <div class="steps" id="steps"></div>
+        <div class="count"><span id="progressNow">1</span>/10</div>
+      </div>
+
+      <div class="card qcard">
+        <h2 id="qTitle" class="qtitle">คำถาม</h2>
+
+        <div id="choices" class="choices"></div>
+
+        <div id="inputWrap" class="input-wrap hidden">
+          <input id="inputField" class="input" type="text" placeholder="กรอกคำตอบ" aria-label="answer">
+        </div>
+
+        <p class="hint" id="hint"></p>
+
+        <div class="nav">
+          <button class="btn ghost" id="prevBtn" disabled>ย้อนกลับ</button>
+          <button class="btn primary" id="nextBtn" disabled>ถัดไป</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section class="panel" data-screen="result">
+    <div class="result-wrap">
+      <figure class="poster">
+        <img id="resultImg" alt="Result poster">
+      </figure>
+      <h2 id="resultTitle" class="result-title"></h2>
+      <p id="resultKeywords" class="result-key"></p>
+      <article id="resultMessage" class="result-msg"></article>
+      <div class="actions">
+        <button class="btn primary" id="shareBtn">แชร์ผลลัพธ์</button>
+        <button class="btn ghost" id="restartBtn">เล่นใหม่</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">© OOOMarket</footer>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
