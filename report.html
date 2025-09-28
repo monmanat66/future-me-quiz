@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Future Me — Dashboard (Public Read)</title>
+
+    <!-- Chart.js & SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --navy: #0f1b3a;
+            --gold: #d4af37;
+            --paper: #f7f5ef;
+            --muted: #9aa3b2;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, Segoe UI, Roboto, TH Sarabun New, Sarabun, Arial;
+            background: radial-gradient(1200px 800px at 80% -10%, #162758, var(--navy) 60%, #0a1330 100%);
+            color: #eef2ff;
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: auto;
+            padding: 24px
+        }
+
+        header {
+            padding: 28px 0 12px;
+            text-align: center
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            position: relative;
+            background: conic-gradient(from 0deg, #fff0 0 60deg, var(--gold) 0 120deg, #fff0 0 360deg);
+            box-shadow: 0 0 14px #0008 inset, 0 0 10px #0008
+        }
+
+        .logo::after {
+            content: "★";
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: var(--gold);
+            font-weight: 900
+        }
+
+        h1 {
+            margin: 6px 0 0;
+            font-size: clamp(22px, 4vw, 34px);
+            color: #ffe9a8
+        }
+
+        .tag {
+            display: inline-block;
+            margin-top: 6px;
+            color: #f3edd9;
+            opacity: .85
+        }
+
+        .panel {
+            background: linear-gradient(180deg, #11214a, #0c1738);
+            border: 1px solid #223463;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 14px 0;
+            box-shadow: 0 10px 30px #0009, inset 0 0 0 1px #0006
+        }
+
+        .bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center
+        }
+
+        .bar .sp {
+            flex: 1
+        }
+
+        label {
+            font-size: 14px;
+            color: #e6ecff
+        }
+
+        input[type="date"] {
+            background: #0a1533;
+            border: 1px solid #334b89;
+            color: #fff;
+            border-radius: 10px;
+            padding: 8px 10px;
+            outline: none
+        }
+
+        button {
+            background: linear-gradient(180deg, #f5d36b, #caa436);
+            color: #1a1406;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 18px #0007, inset 0 1px 0 #fff8;
+            transition: .2s transform, .2s box-shadow
+        }
+
+        button.secondary {
+            background: #192a5c;
+            color: #e6ecff;
+            border: 1px solid #2e437f;
+            box-shadow: none;
+            font-weight: 600
+        }
+
+        button:hover {
+            transform: translateY(-1px)
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px
+        }
+
+        @media(min-width:900px) {
+            .grid.cols-2 {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .grid.cols-3 {
+                grid-template-columns: 1fr 1fr 1fr
+            }
+        }
+
+        .card-title {
+            font-weight: 800;
+            color: #ffe9a8;
+            margin: 0 0 8px
+        }
+
+        canvas {
+            width: 100%;
+            height: 340px;
+            max-height: 46vh
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 6px 10px;
+            border: 1px dashed #8a6b1a;
+            color: #f7d77a;
+            border-radius: 999px;
+            font-size: 12px;
+            opacity: .9
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #223463;
+            padding: 8px 10px;
+            font-size: 14px
+        }
+
+        th {
+            color: #ffe9a8;
+            text-align: left
+        }
+
+        .footer-note {
+            font-size: 12px;
+            color: #c1c7d6;
+            opacity: .9
+        }
+    </style>
+</head>
+
+<body>
+    <header class="wrap">
+        <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div>
+                <h1>Future Me — Dashboard</h1>
+                <div class="tag">ดูข้อมูลคำตอบ (Q1,2,3 & Q11–13) • กราฟ • ส่งออก Excel • โหมดสาธารณะ (ไม่ต้องออเทน)
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="wrap panel">
+        <div class="bar">
+            <div class="pill">ธีม: กรม • ทอง</div>
+            <div class="sp"></div>
+            <label>ตั้งแต่วันที่</label>
+            <input type="date" id="dateFrom">
+            <label>ถึง</label>
+            <input type="date" id="dateTo">
+            <button id="loadBtn">โหลดข้อมูล</button>
+            <button class="secondary" id="exportBtn">ส่งออก Excel</button>
+        </div>
+        <div class="bar" style="margin-top:10px; gap:12px">
+            <div class="pill">รวมรายการ: <span id="totalCount">—</span></div>
+            <div class="pill">อัปเดตล่าสุด: <span id="lastUpdated">—</span></div>
+            <div class="pill">สถานะ: <span id="statusText">Public (no auth)</span></div>
+        </div>
+    </section>
+
+    <section class="wrap grid cols-2">
+        <div class="panel">
+            <h3 class="card-title">สัดส่วนเพศ (Q1)</h3>
+            <canvas id="genderChart"></canvas>
+        </div>
+        <div class="panel">
+            <h3 class="card-title">อายุ (Q2) — แบ่งช่วง 10 ปี</h3>
+            <canvas id="ageChart"></canvas>
+        </div>
+        <div class="panel">
+            <h3 class="card-title">อาชีพยอดฮิต 10 อันดับ (Q3)</h3>
+            <canvas id="jobChart"></canvas>
+        </div>
+        <div class="panel">
+            <h3 class="card-title">ความรู้สึกต่อ “งานวันนี้” (Q11)</h3>
+            <canvas id="q11Chart"></canvas>
+        </div>
+        <div class="panel">
+            <h3 class="card-title">ส่วนที่ชอบที่สุด (Q12)</h3>
+            <canvas id="q12Chart"></canvas>
+        </div>
+        <div class="panel">
+            <h3 class="card-title">อยากปรับปรุง (Q13)</h3>
+            <canvas id="q13Chart"></canvas>
+        </div>
+        <div class="panel" style="grid-column:1/-1">
+            <h3 class="card-title">จำนวนแบบวัน (time-series)</h3>
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </section>
+
+    <section class="wrap panel">
+        <h3 class="card-title">ตัวอย่างข้อมูลล่าสุด</h3>
+        <div style="overflow:auto">
+            <table id="previewTable">
+                <thead>
+                    <tr>
+                        <th>เวลา (ท้องถิ่น)</th>
+                        <th>เพศ</th>
+                        <th>อายุ</th>
+                        <th>อาชีพ</th>
+                        <th>Q11</th>
+                        <th>Q12</th>
+                        <th>Q13</th>
+                        <th>ผลลัพธ์</th>
+                    </tr>
+                </thead>
+                <tbody><!-- filled by JS --></tbody>
+            </table>
+        </div>
+        <p class="footer-note">* แสดงตัวอย่างล่าสุด 20 แถว</p>
+    </section>
+
+    <script>
+        /* ========= Firebase (no auth) =========
+           ต้องเปิดกฎ read ให้คอลเลกชัน quiz_responses ตามที่แจ้งด้านบน
+        */
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuH6dwSVkgLHrzPjeXOd_pfLM674cZkj8",
+            authDomain: "future-me-quiz.firebaseapp.com",
+            projectId: "future-me-quiz",
+            storageBucket: "future-me-quiz.firebasestorage.app",
+            messagingSenderId: "382872960355",
+            appId: "1:382872960355:web:b74060970a3b3810f1e756",
+            measurementId: "G-M4L0D5PFWY"
+        };
+
+        let _dbPromise = null;
+        async function getDB() {
+            if (_dbPromise) return _dbPromise;
+            _dbPromise = (async () => {
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+                const app = initializeApp(firebaseConfig);
+                try {
+                    const { isSupported, getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
+                    if (await isSupported()) getAnalytics(app);
+                } catch { }
+                // ใช้ initializeFirestore เพื่อหลีกเลี่ยงบางเน็ตเวิร์กปิด WebChannels
+                try {
+                    const { initializeFirestore, setLogLevel } =
+                        await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                    const db = initializeFirestore(app, {
+                        experimentalAutoDetectLongPolling: true,
+                        useFetchStreams: false
+                    });
+                    try { setLogLevel('error'); } catch { }
+                    return db;
+                } catch {
+                    const { getFirestore, setLogLevel: sl } =
+                        await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                    try { sl('error'); } catch { }
+                    return getFirestore(app);
+                }
+            })();
+            return _dbPromise;
+        }
+
+        /* ========= Fetch + Aggregate ========= */
+        const Q11_LABELS = { A: 'สนุกและมีสีสัน', B: 'ได้ความรู้/แรงบันดาลใจ', C: 'อบอุ่น/เจอเพื่อนใหม่', D: 'ตื่นเต้นอยากมาร่วมอีก' };
+        const Q12_LABELS = { A: 'Workshop/กิจกรรม', B: 'บรรยากาศ/การตกแต่ง', C: 'ร้านค้า/บูธ', D: 'การดูดวง/สายมู' };
+        const Q13_LABELS = { A: 'พื้นที่/จัดโซน', B: 'เวลากิจกรรม', C: 'ประชาสัมพันธ์', D: 'เพิ่มร้าน/กิจกรรม' };
+
+        async function fetchAll() {
+            const db = await getDB();
+            const { collection, getDocs } =
+                await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+
+            // หมายเหตุ: ถ้าข้อมูลเยอะ แนะนำทำ query ตามช่วงวันที่ + สร้าง index
+            const snap = await getDocs(collection(db, 'quiz_responses'));
+            const rows = [];
+            snap.forEach(doc => {
+                const d = doc.data();
+                const ts = d.ts && d.ts.toDate ? d.ts.toDate() : null;
+                rows.push({
+                    id: doc.id,
+                    ts,
+                    gender: d.gender ?? null,
+                    age: (typeof d.age === 'number') ? d.age : null,
+                    job: d.job ?? null,
+                    q11: d.q11 ?? null,
+                    q12: d.q12 ?? null,
+                    q13: d.q13 ?? null,
+                    resultTitle: d.result?.title ?? null,
+                    resultTop: d.result?.topLetter ?? null,
+                    ua: d.ua ?? null
+                });
+            });
+            return rows;
+        }
+
+        function applyDateFilter(rows, fromStr, toStr) {
+            if (!fromStr && !toStr) return rows;
+            const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+            const to = toStr ? new Date(toStr + 'T23:59:59.999') : null;
+            return rows.filter(r => {
+                if (!r.ts) return false;
+                const t = r.ts.getTime();
+                if (from && t < from.getTime()) return false;
+                if (to && t > to.getTime()) return false;
+                return true;
+            });
+        }
+
+        function aggregate(rows) {
+            const gender = new Map();
+            const ageBins = new Map();
+            const jobs = new Map();
+            const q11 = { A: 0, B: 0, C: 0, D: 0 };
+            const q12 = { A: 0, B: 0, C: 0, D: 0 };
+            const q13 = { A: 0, B: 0, C: 0, D: 0 };
+            const daily = new Map();
+
+            for (const r of rows) {
+                if (r.gender) gender.set(r.gender, (gender.get(r.gender) || 0) + 1);
+
+                if (typeof r.age === 'number' && !isNaN(r.age)) {
+                    const bin = Math.floor(r.age / 10) * 10;
+                    const label = bin >= 70 ? '70+' : `${bin}-${bin + 9}`;
+                    ageBins.set(label, (ageBins.get(label) || 0) + 1);
+                }
+
+                if (r.job) {
+                    const key = String(r.job).trim().toLowerCase();
+                    if (key) jobs.set(key, (jobs.get(key) || 0) + 1);
+                }
+
+                if (r.q11 && q11[r.q11] != null) q11[r.q11]++;
+                if (r.q12 && q12[r.q12] != null) q12[r.q12]++;
+                if (r.q13 && q13[r.q13] != null) q13[r.q13]++;
+
+                if (r.ts) {
+                    const d = r.ts.toISOString().slice(0, 10);
+                    daily.set(d, (daily.get(d) || 0) + 1);
+                }
+            }
+
+            const ageSorted = Array.from(ageBins.entries()).sort((a, b) => {
+                const a0 = a[0] === '70+' ? 70 : parseInt(a[0]); const b0 = b[0] === '70+' ? 70 : parseInt(b[0]);
+                return a0 - b0;
+            });
+
+            const jobsTop = Array.from(jobs.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const dailySorted = Array.from(daily.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+            return { gender, ageSorted, jobsTop, q11, q12, q13, dailySorted };
+        }
+
+        /* ========= Charts ========= */
+        let charts = {};
+        function destroyCharts() { Object.values(charts).forEach(ch => { try { ch.destroy(); } catch { } }); charts = {}; }
+
+        function makePie(ctxId, labels, data) {
+            const ctx = document.getElementById(ctxId); if (!ctx) return null;
+            return new Chart(ctx, {
+                type: 'pie',
+                data: { labels, datasets: [{ data }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e6ecff' } } } }
+            });
+        }
+        function makeBar(ctxId, labels, data, horizontal = false) {
+            const ctx = document.getElementById(ctxId); if (!ctx) return null;
+            return new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ data }] },
+                options: {
+                    responsive: true, indexAxis: horizontal ? 'y' : 'x',
+                    scales: {
+                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' } },
+                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' }, beginAtZero: true, precision: 0 }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        function makeLine(ctxId, labels, data) {
+            const ctx = document.getElementById(ctxId); if (!ctx) return null;
+            return new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: [{ data, fill: false, tension: .2 }] },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' } },
+                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' }, beginAtZero: true, precision: 0 }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ========= Render + Export ========= */
+        function renderPreview(rows) {
+            const tbody = document.querySelector('#previewTable tbody');
+            tbody.innerHTML = '';
+            const last = rows.slice().sort((a, b) => (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0)).slice(0, 20);
+            for (const r of last) {
+                const tr = document.createElement('tr');
+                const dateStr = r.ts ? new Date(r.ts).toLocaleString() : '-';
+                tr.innerHTML = `
+      <td>${dateStr}</td>
+      <td>${r.gender ?? ''}</td>
+      <td>${r.age ?? ''}</td>
+      <td>${r.job ?? ''}</td>
+      <td>${r.q11 ?? ''}</td>
+      <td>${r.q12 ?? ''}</td>
+      <td>${r.q13 ?? ''}</td>
+      <td>${r.resultTitle ?? ''} (${r.resultTop ?? ''})</td>
+    `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function exportExcel(rows) {
+            const data = rows.map(r => ({
+                id: r.id,
+                timestamp: r.ts ? r.ts.toISOString() : '',
+                gender: r.gender ?? '',
+                age: r.age ?? '',
+                job: r.job ?? '',
+                q11: r.q11 ?? '',
+                q11_label: Q11_LABELS[r.q11] || '',
+                q12: r.q12 ?? '',
+                q12_label: Q12_LABELS[r.q12] || '',
+                q13: r.q13 ?? '',
+                q13_label: Q13_LABELS[r.q13] || '',
+                result_title: r.resultTitle ?? '',
+                result_top: r.resultTop ?? '',
+                user_agent: r.ua ?? ''
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "quiz_responses");
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            XLSX.writeFile(wb, `FutureMe_Responses_${stamp}.xlsx`);
+        }
+
+        /* ========= Load handlers ========= */
+        const loadBtn = document.getElementById('loadBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+        const totalCount = document.getElementById('totalCount');
+        const lastUpdated = document.getElementById('lastUpdated');
+
+        let lastRows = [];
+
+        async function loadAndRender() {
+            try {
+                loadBtn.disabled = true; loadBtn.textContent = 'กำลังโหลด…';
+
+                const all = await fetchAll();
+                const filtered = applyDateFilter(all, dateFrom.value, dateTo.value);
+                lastRows = filtered;
+
+                totalCount.textContent = String(filtered.length);
+                lastUpdated.textContent = new Date().toLocaleString();
+
+                const agg = aggregate(filtered);
+                destroyCharts();
+
+                const genderLabels = Array.from(agg.gender.keys());
+                const genderData = Array.from(agg.gender.values());
+                charts.gender = makePie('genderChart', genderLabels, genderData);
+
+                charts.age = makeBar('ageChart',
+                    agg.ageSorted.map(([k]) => k),
+                    agg.ageSorted.map(([, v]) => v));
+
+                charts.jobs = makeBar('jobChart',
+                    agg.jobsTop.map(([k]) => k),
+                    agg.jobsTop.map(([, v]) => v), true);
+
+                charts.q11 = makeBar('q11Chart',
+                    ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q11_LABELS[k]}`),
+                    ['A', 'B', 'C', 'D'].map(k => agg.q11[k]));
+                charts.q12 = makeBar('q12Chart',
+                    ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q12_LABELS[k]}`),
+                    ['A', 'B', 'C', 'D'].map(k => agg.q12[k]));
+                charts.q13 = makeBar('q13Chart',
+                    ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q13_LABELS[k]}`),
+                    ['A', 'B', 'C', 'D'].map(k => agg.q13[k]));
+
+                charts.daily = makeLine('dailyChart',
+                    agg.dailySorted.map(([d]) => d),
+                    agg.dailySorted.map(([, v]) => v));
+
+                renderPreview(filtered);
+
+            } catch (err) {
+                console.error(err);
+                // ถ้า rules ยังไม่อนุญาต read จะเจอ PERMISSION_DENIED
+                alert('โหลดข้อมูลไม่สำเร็จ: ' + (err?.message || err) + '\nตรวจ Firestore Rules ให้ allow read กับคอลเลกชัน quiz_responses');
+            } finally {
+                loadBtn.disabled = false; loadBtn.textContent = 'โหลดข้อมูล';
+            }
+        }
+
+        loadBtn.addEventListener('click', loadAndRender);
+        exportBtn.addEventListener('click', () => exportExcel(lastRows));
+
+        // auto load ครั้งแรก
+        loadAndRender();
+    </script>
+</body>
+
+</html>
