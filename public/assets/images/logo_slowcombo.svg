@@ -1,0 +1,16 @@
+<svg width="600" height="180" viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#f5d48b"/>
+      <stop offset="1" stop-color="#e8b64b"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="180" rx="22" fill="#0b1a2a"/>
+  <g transform="translate(24,32)">
+    <circle cx="36" cy="58" r="5" fill="url(#g)"/>
+    <circle cx="60" cy="24" r="3" fill="url(#g)"/>
+    <circle cx="84" cy="78" r="2.5" fill="url(#g)"/>
+  </g>
+  <text x="300" y="90" text-anchor="middle" fill="url(#g)" font-family="Cinzel, serif" font-size="40">Future Me</text>
+  <text x="300" y="130" text-anchor="middle" fill="#d9c07a" font-family="Noto Sans Thai, sans-serif" font-size="18">by OOOMarket · At Slowcombo 31 Oct – 2 Nov</text>
+</svg>

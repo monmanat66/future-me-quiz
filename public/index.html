@@ -20,12 +20,14 @@
     <div class="hero hero-soft">
       <h1 class="logo-text soft">Future Me</h1>
       <div class="divider"><span></span></div>
+      <h2>💫พลังแห่งอนาคตกำลังเรียกหา💫</h2>
       <p class="lede soft">
-        <strong>พลังแห่งอนาคตกำลังเรียกหา</strong> — ทุกคำตอบของคุณคือร่องรอยของความฝันที่กำลังเติบโตเป็นความจริง
-        อย่ากลัวที่จะก้าว เพราะทุกก้าวคือพลังที่สร้างเส้นทางของคุณเอง<br>
+        ทุกคำตอบของคุณคือร่องรอยของความฝันที่กำลังเติบโตเป็นความจริง
+        อย่ากลัวที่จะก้าว เพราะทุกก้าวคือพลังที่สร้างเส้นทางของคุณเอง
         อนาคตไม่ได้ถูกกำหนดโดยโชคชะตา แต่มาจากความเชื่อในใจของคุณ
-        วันนี้…คุณได้เริ่มต้น <em>ปลุกพลังในตัวเอง</em> แล้ว
+        <br>วันนี้…คุณได้เริ่มต้น <em>ปลุกพลังในตัวเอง</em> แล้ว
       </p>
+      <h3>“เพราะอนาคตที่สวยงาม เริ่มจากพลังแห่งวันนี้”</h3>
       <button id="startBtn" class="btn xl primary">เริ่มทำแบบทดสอบ</button>
       <p class="event-note">Future Me by OOOMarket • At Slowcombo 31 Oct – 2 Nov</p>
     </div>
@@ -34,7 +36,7 @@
   <!-- Quiz -->
   <section class="panel" data-screen="quiz" aria-live="polite">
     <div class="wizard">
-      <div class="wizard-head">
+      <div class="wizard-head">-
         <div class="steps" id="steps"></div>
         <div class="count"><span id="progressNow">1</span>/13</div>
       </div>
@@ -59,20 +61,26 @@
   </section>
 
   <!-- Result -->
-  <section class="panel" data-screen="result">
-    <div class="result-wrap">
-      <figure class="poster">
-        <img id="resultImg" alt="Result poster">
-      </figure>
-      <h2 id="resultTitle" class="result-title"></h2>
-      <p id="resultKeywords" class="result-key"></p>
-      <article id="resultMessage" class="result-msg"></article>
-      <div class="actions">
-        <button class="btn primary" id="shareBtn">แชร์ผลลัพธ์</button>
-        <button class="btn ghost" id="restartBtn">เล่นใหม่</button>
-      </div>
+<section class="panel" data-screen="result">
+  <div class="result-wrap">
+    <figure class="poster">
+      <img id="resultImg" alt="Result poster">
+    </figure>
+    <h2 id="resultTitle" class="result-title" style="color:#f5d48b;" ></h2>
+    <!-- <p id="resultKeywords" class="result-key"></p> -->
+
+    <!-- เปลี่ยนเป็นมีหัวข้อ + เนื้อความแยกกัน -->
+    <article class="result-msg">
+      <h3 id="resultMsgTitle" class="result-msg-title" style="color:#f5d48b;"></h3>
+      <p  id="resultMsgText"  class="result-msg-text"></p>
+    </article>
+
+    <div class="actions">
+      <button class="btn primary" id="shareBtn">แชร์ผลลัพธ์</button>
+      <button class="btn ghost" id="restartBtn">เล่นใหม่</button>
     </div>
-  </section>
+  </div>
+</section>
 </main>
 
 <footer class="site-foot">© OOOMarket</footer>

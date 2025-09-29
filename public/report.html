@@ -13,20 +13,52 @@
     <style>
         :root {
             --navy: #0f1b3a;
-            --gold: #d4af37;
+            --navy-2: #0c1738;
+            --navy-3: #11214a;
+            --gold: #f5d48b;
+            --gold-2: #ffe9a8;
+            --gold-3: #caa436;
             --paper: #f7f5ef;
             --muted: #9aa3b2;
+            --ink: #e6ecff;
         }
 
         * {
             box-sizing: border-box
         }
 
+        html,
+        body {
+            height: 100%
+        }
+
         body {
             margin: 0;
-            font-family: system-ui, Segoe UI, Roboto, TH Sarabun New, Sarabun, Arial;
-            background: radial-gradient(1200px 800px at 80% -10%, #162758, var(--navy) 60%, #0a1330 100%);
+            font-family: system-ui, Segoe UI, Roboto, "TH Sarabun New", Sarabun, Arial, sans-serif;
             color: #eef2ff;
+            background: radial-gradient(1200px 800px at 80% -10%, #162758, var(--navy) 60%, #0a1330 100%);
+            overflow-x: hidden;
+        }
+
+        /* Starfield canvas behind everything */
+        #starfield {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: -1;
+        }
+
+        /* soft vignette overlay for depth */
+        .vignette {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(1200px 800px at 20% 10%, #ffffff08, transparent 40%),
+                radial-gradient(1600px 1000px at 80% -10%, #f5d48b10, transparent 60%),
+                radial-gradient(60vw 80vh at 50% 120%, #00000055, transparent 70%);
         }
 
         .wrap {
@@ -52,8 +84,8 @@
             border-radius: 50%;
             border: 2px solid var(--gold);
             position: relative;
-            background: conic-gradient(from 0deg, #fff0 0 60deg, var(--gold) 0 120deg, #fff0 0 360deg);
-            box-shadow: 0 0 14px #0008 inset, 0 0 10px #0008
+            background: conic-gradient(from 0deg, #0000 0 60deg, var(--gold) 0 120deg, #0000 0 360deg);
+            box-shadow: 0 0 14px #0008 inset, 0 0 10px #0008;
         }
 
         .logo::after {
@@ -69,7 +101,8 @@
         h1 {
             margin: 6px 0 0;
             font-size: clamp(22px, 4vw, 34px);
-            color: #ffe9a8
+            color: var(--gold-2);
+            letter-spacing: .2px
         }
 
         .tag {
@@ -80,12 +113,13 @@
         }
 
         .panel {
-            background: linear-gradient(180deg, #11214a, #0c1738);
+            background: linear-gradient(180deg, var(--navy-3), var(--navy-2));
             border: 1px solid #223463;
             border-radius: 16px;
             padding: 16px;
             margin: 14px 0;
-            box-shadow: 0 10px 30px #0009, inset 0 0 0 1px #0006
+            box-shadow: 0 10px 30px #0009, inset 0 0 0 1px #0006;
+            backdrop-filter: blur(4px);
         }
 
         .bar {
@@ -99,9 +133,19 @@
             flex: 1
         }
 
+        .pill {
+            display: inline-block;
+            padding: 6px 10px;
+            border: 1px dashed #8a6b1a;
+            color: #f7d77a;
+            border-radius: 999px;
+            font-size: 12px;
+            opacity: .9
+        }
+
         label {
             font-size: 14px;
-            color: #e6ecff
+            color: var(--ink)
         }
 
         input[type="date"] {
@@ -114,7 +158,7 @@
         }
 
         button {
-            background: linear-gradient(180deg, #f5d36b, #caa436);
+            background: linear-gradient(180deg, var(--gold), var(--gold-3));
             color: #1a1406;
             border: none;
             border-radius: 999px;
@@ -154,7 +198,7 @@
 
         .card-title {
             font-weight: 800;
-            color: #ffe9a8;
+            color: var(--gold-2);
             margin: 0 0 8px
         }
 
@@ -162,16 +206,6 @@
             width: 100%;
             height: 340px;
             max-height: 46vh
-        }
-
-        .pill {
-            display: inline-block;
-            padding: 6px 10px;
-            border: 1px dashed #8a6b1a;
-            color: #f7d77a;
-            border-radius: 999px;
-            font-size: 12px;
-            opacity: .9
         }
 
         table {
@@ -187,7 +221,7 @@
         }
 
         th {
-            color: #ffe9a8;
+            color: var(--gold-2);
             text-align: left
         }
 
@@ -200,6 +234,10 @@
 </head>
 
 <body>
+    <!-- Starfield BG -->
+    <canvas id="starfield" aria-hidden="true"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+
     <header class="wrap">
         <div class="brand">
             <div class="logo" aria-hidden="true"></div>
@@ -283,8 +321,99 @@
     </section>
 
     <script>
+        /* ========= Starfield (ช้า + ดาวตกช้า) ========= */
+        (function () {
+            const c = document.getElementById('starfield'); if (!c) return;
+            const ctx = c.getContext('2d');
+            let dpr = Math.max(1, devicePixelRatio || 1);
+
+            function resize() {
+                dpr = Math.max(1, devicePixelRatio || 1);
+                c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+                c.style.width = innerWidth + 'px'; c.style.height = innerHeight + 'px';
+                makeStars();
+            }
+            addEventListener('resize', resize);
+
+            let stars = [];
+            function makeStars() {
+                const area = innerWidth * innerHeight;
+                const N = Math.max(90, Math.min(Math.round(area / 9000), 220));
+                stars = Array.from({ length: N }, () => ({
+                    x: Math.random() * c.width, y: Math.random() * c.height,
+                    r: Math.random() * 1.1 + .5,
+                    s: Math.random() * (0.003 - 0.0008) + 0.0008, // ช้าลง
+                    p: Math.random() * Math.PI * 2
+                }));
+            }
+
+            const meteors = []; let nextSpawn = 0;
+            function spawnMeteor(now) {
+                const fromTop = Math.random() < .6;
+                const m = 40 * dpr;
+                let x, y, a;
+                if (fromTop) { x = Math.random() * c.width * .8; y = -m; a = Math.random() * 0.35 + 0.6; }
+                else { x = -m; y = Math.random() * c.height * .5; a = Math.random() * 0.25 + 0.75; }
+                const speed = (Math.random() * 0.20 + 0.10) * dpr;
+                const vx = Math.cos(a) * speed, vy = Math.sin(a) * speed;
+                meteors.push({
+                    x, y, vx, vy,
+                    len: (Math.random() * 140 + 120) * dpr,
+                    ttl: Math.random() * 2000 + 2200,
+                    born: now,
+                    w: (Math.random() * 1.5 + 0.8) * dpr
+                });
+            }
+
+            resize();
+            let last = performance.now();
+            (function loop(now) {
+                const dt = now - last; last = now;
+                ctx.clearRect(0, 0, c.width, c.height);
+
+                for (const s of stars) {
+                    const alpha = .5 + Math.sin(now * s.s + s.p) * .35;
+                    ctx.fillStyle = `rgba(232,196,108,${alpha})`;
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.r * dpr, 0, Math.PI * 2); ctx.fill();
+                }
+
+                if (now > nextSpawn && meteors.length < 2) {
+                    spawnMeteor(now);
+                    nextSpawn = now + (Math.random() * 4000 + 2000); // 2–6s
+                }
+
+                ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                for (let i = meteors.length - 1; i >= 0; i--) {
+                    const m = meteors[i];
+                    m.x += m.vx * dt; m.y += m.vy * dt;
+                    const life = now - m.born;
+                    const over = life > m.ttl || m.x > c.width + 100 * dpr || m.y > c.height + 100 * dpr;
+                    if (over) { meteors.splice(i, 1); continue; }
+
+                    const trail = m.len * (1 - life / m.ttl * .6);
+                    const tx = m.x - m.vx * trail, ty = m.y - m.vy * trail;
+
+                    const grad = ctx.createLinearGradient(m.x, m.y, tx, ty);
+                    grad.addColorStop(0, 'rgba(255,240,200,.9)');
+                    grad.addColorStop(.2, 'rgba(255,220,160,.65)');
+                    grad.addColorStop(1, 'rgba(255,200,120,0)');
+
+                    ctx.lineWidth = m.w; ctx.strokeStyle = grad;
+                    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke();
+
+                    ctx.shadowBlur = 12 * dpr; ctx.shadowColor = 'rgba(255,230,180,.9)';
+                    ctx.fillStyle = 'rgba(255,240,200,.95)';
+                    ctx.beginPath(); ctx.arc(m.x, m.y, m.w * 1.2, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                ctx.restore();
+
+                requestAnimationFrame(loop);
+            })(last);
+        })();
+
         /* ========= Firebase (no auth) =========
-           ต้องเปิดกฎ read ให้คอลเลกชัน quiz_responses ตามที่แจ้งด้านบน
+           ต้องเปิด read ให้คอลเลกชัน quiz_responses ใน Firestore Rules
         */
         const firebaseConfig = {
             apiKey: "AIzaSyAuH6dwSVkgLHrzPjeXOd_pfLM674cZkj8",
@@ -306,19 +435,13 @@
                     const { isSupported, getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
                     if (await isSupported()) getAnalytics(app);
                 } catch { }
-                // ใช้ initializeFirestore เพื่อหลีกเลี่ยงบางเน็ตเวิร์กปิด WebChannels
                 try {
-                    const { initializeFirestore, setLogLevel } =
-                        await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                    const db = initializeFirestore(app, {
-                        experimentalAutoDetectLongPolling: true,
-                        useFetchStreams: false
-                    });
+                    const { initializeFirestore, setLogLevel } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                    const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
                     try { setLogLevel('error'); } catch { }
                     return db;
                 } catch {
-                    const { getFirestore, setLogLevel: sl } =
-                        await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                    const { getFirestore, setLogLevel: sl } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
                     try { sl('error'); } catch { }
                     return getFirestore(app);
                 }
@@ -333,15 +456,11 @@
 
         async function fetchAll() {
             const db = await getDB();
-            const { collection, getDocs } =
-                await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-
-            // หมายเหตุ: ถ้าข้อมูลเยอะ แนะนำทำ query ตามช่วงวันที่ + สร้าง index
+            const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
             const snap = await getDocs(collection(db, 'quiz_responses'));
             const rows = [];
             snap.forEach(doc => {
-                const d = doc.data();
-                const ts = d.ts && d.ts.toDate ? d.ts.toDate() : null;
+                const d = doc.data(); const ts = d.ts && d.ts.toDate ? d.ts.toDate() : null;
                 rows.push({
                     id: doc.id,
                     ts,
@@ -373,86 +492,74 @@
         }
 
         function aggregate(rows) {
-            const gender = new Map();
-            const ageBins = new Map();
-            const jobs = new Map();
-            const q11 = { A: 0, B: 0, C: 0, D: 0 };
-            const q12 = { A: 0, B: 0, C: 0, D: 0 };
-            const q13 = { A: 0, B: 0, C: 0, D: 0 };
+            const gender = new Map(), ageBins = new Map(), jobs = new Map();
+            const q11 = { A: 0, B: 0, C: 0, D: 0 }, q12 = { A: 0, B: 0, C: 0, D: 0 }, q13 = { A: 0, B: 0, C: 0, D: 0 };
             const daily = new Map();
 
             for (const r of rows) {
                 if (r.gender) gender.set(r.gender, (gender.get(r.gender) || 0) + 1);
-
                 if (typeof r.age === 'number' && !isNaN(r.age)) {
-                    const bin = Math.floor(r.age / 10) * 10;
-                    const label = bin >= 70 ? '70+' : `${bin}-${bin + 9}`;
+                    const bin = Math.floor(r.age / 10) * 10; const label = bin >= 70 ? '70+' : `${bin}-${bin + 9}`;
                     ageBins.set(label, (ageBins.get(label) || 0) + 1);
                 }
-
                 if (r.job) {
                     const key = String(r.job).trim().toLowerCase();
                     if (key) jobs.set(key, (jobs.get(key) || 0) + 1);
                 }
-
                 if (r.q11 && q11[r.q11] != null) q11[r.q11]++;
                 if (r.q12 && q12[r.q12] != null) q12[r.q12]++;
                 if (r.q13 && q13[r.q13] != null) q13[r.q13]++;
-
-                if (r.ts) {
-                    const d = r.ts.toISOString().slice(0, 10);
-                    daily.set(d, (daily.get(d) || 0) + 1);
-                }
+                if (r.ts) { const d = r.ts.toISOString().slice(0, 10); daily.set(d, (daily.get(d) || 0) + 1); }
             }
 
             const ageSorted = Array.from(ageBins.entries()).sort((a, b) => {
-                const a0 = a[0] === '70+' ? 70 : parseInt(a[0]); const b0 = b[0] === '70+' ? 70 : parseInt(b[0]);
-                return a0 - b0;
+                const a0 = a[0] === '70+' ? 70 : parseInt(a[0]); const b0 = b[0] === '70+' ? 70 : parseInt(b[0]); return a0 - b0;
             });
-
             const jobsTop = Array.from(jobs.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
             const dailySorted = Array.from(daily.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-
             return { gender, ageSorted, jobsTop, q11, q12, q13, dailySorted };
         }
 
-        /* ========= Charts ========= */
+        /* ========= Chart helpers (ธีมเดียวกับหน้า Quiz) ========= */
+        Chart.defaults.color = '#e6ecff';
+        const PALETTE = ['#f5d48b', '#8ecfff', '#b8a7ff', '#77e0b5', '#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'];
+
         let charts = {};
         function destroyCharts() { Object.values(charts).forEach(ch => { try { ch.destroy(); } catch { } }); charts = {}; }
 
-        function makePie(ctxId, labels, data) {
-            const ctx = document.getElementById(ctxId); if (!ctx) return null;
-            return new Chart(ctx, {
+        function makePie(id, labels, data) {
+            const el = document.getElementById(id); if (!el) return null;
+            const colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+            return new Chart(el, {
                 type: 'pie',
-                data: { labels, datasets: [{ data }] },
-                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e6ecff' } } } }
+                data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#0000' }] },
+                options: { plugins: { legend: { position: 'bottom', labels: { color: '#e6ecff' } } } }
             });
         }
-        function makeBar(ctxId, labels, data, horizontal = false) {
-            const ctx = document.getElementById(ctxId); if (!ctx) return null;
-            return new Chart(ctx, {
+        function makeBar(id, labels, data, horizontal = false) {
+            const el = document.getElementById(id); if (!el) return null;
+            return new Chart(el, {
                 type: 'bar',
-                data: { labels, datasets: [{ data }] },
+                data: { labels, datasets: [{ data, backgroundColor: '#f5d48b88', borderColor: '#f5d48b', borderWidth: 2 }] },
                 options: {
-                    responsive: true, indexAxis: horizontal ? 'y' : 'x',
+                    indexAxis: horizontal ? 'y' : 'x',
                     scales: {
-                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' } },
-                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' }, beginAtZero: true, precision: 0 }
+                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.08)' } },
+                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.08)' }, beginAtZero: true, precision: 0 }
                     },
                     plugins: { legend: { display: false } }
                 }
             });
         }
-        function makeLine(ctxId, labels, data) {
-            const ctx = document.getElementById(ctxId); if (!ctx) return null;
-            return new Chart(ctx, {
+        function makeLine(id, labels, data) {
+            const el = document.getElementById(id); if (!el) return null;
+            return new Chart(el, {
                 type: 'line',
-                data: { labels, datasets: [{ data, fill: false, tension: .2 }] },
+                data: { labels, datasets: [{ data, borderColor: '#f5d48b', backgroundColor: '#f5d48b33', fill: true, tension: .26, pointRadius: 3 }] },
                 options: {
-                    responsive: true,
                     scales: {
-                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' } },
-                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.1)' }, beginAtZero: true, precision: 0 }
+                        x: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.08)' } },
+                        y: { ticks: { color: '#e6ecff' }, grid: { color: 'rgba(255,255,255,.08)' }, beginAtZero: true, precision: 0 }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -468,15 +575,15 @@
                 const tr = document.createElement('tr');
                 const dateStr = r.ts ? new Date(r.ts).toLocaleString() : '-';
                 tr.innerHTML = `
-      <td>${dateStr}</td>
-      <td>${r.gender ?? ''}</td>
-      <td>${r.age ?? ''}</td>
-      <td>${r.job ?? ''}</td>
-      <td>${r.q11 ?? ''}</td>
-      <td>${r.q12 ?? ''}</td>
-      <td>${r.q13 ?? ''}</td>
-      <td>${r.resultTitle ?? ''} (${r.resultTop ?? ''})</td>
-    `;
+          <td>${dateStr}</td>
+          <td>${r.gender ?? ''}</td>
+          <td>${r.age ?? ''}</td>
+          <td>${r.job ?? ''}</td>
+          <td>${r.q11 ?? ''}</td>
+          <td>${r.q12 ?? ''}</td>
+          <td>${r.q13 ?? ''}</td>
+          <td>${r.resultTitle ?? ''} (${r.resultTop ?? ''})</td>
+        `;
                 tbody.appendChild(tr);
             }
         }
@@ -488,19 +595,16 @@
                 gender: r.gender ?? '',
                 age: r.age ?? '',
                 job: r.job ?? '',
-                q11: r.q11 ?? '',
-                q11_label: Q11_LABELS[r.q11] || '',
-                q12: r.q12 ?? '',
-                q12_label: Q12_LABELS[r.q12] || '',
-                q13: r.q13 ?? '',
-                q13_label: Q13_LABELS[r.q13] || '',
+                q11: r.q11 ?? '', q11_label: Q11_LABELS[r.q11] || '',
+                q12: r.q12 ?? '', q12_label: Q12_LABELS[r.q12] || '',
+                q13: r.q13 ?? '', q13_label: Q13_LABELS[r.q13] || '',
                 result_title: r.resultTitle ?? '',
                 result_top: r.resultTop ?? '',
                 user_agent: r.ua ?? ''
             }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "quiz_responses");
+            XLSX.utils.book_append_sheet(wb, ws, 'quiz_responses');
             const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
             XLSX.writeFile(wb, `FutureMe_Responses_${stamp}.xlsx`);
         }
@@ -518,7 +622,6 @@
         async function loadAndRender() {
             try {
                 loadBtn.disabled = true; loadBtn.textContent = 'กำลังโหลด…';
-
                 const all = await fetchAll();
                 const filtered = applyDateFilter(all, dateFrom.value, dateTo.value);
                 lastRows = filtered;
@@ -535,32 +638,36 @@
 
                 charts.age = makeBar('ageChart',
                     agg.ageSorted.map(([k]) => k),
-                    agg.ageSorted.map(([, v]) => v));
+                    agg.ageSorted.map(([, v]) => v)
+                );
 
                 charts.jobs = makeBar('jobChart',
                     agg.jobsTop.map(([k]) => k),
-                    agg.jobsTop.map(([, v]) => v), true);
+                    agg.jobsTop.map(([, v]) => v), true
+                );
 
                 charts.q11 = makeBar('q11Chart',
                     ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q11_LABELS[k]}`),
-                    ['A', 'B', 'C', 'D'].map(k => agg.q11[k]));
+                    ['A', 'B', 'C', 'D'].map(k => agg.q11[k])
+                );
                 charts.q12 = makeBar('q12Chart',
                     ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q12_LABELS[k]}`),
-                    ['A', 'B', 'C', 'D'].map(k => agg.q12[k]));
+                    ['A', 'B', 'C', 'D'].map(k => agg.q12[k])
+                );
                 charts.q13 = makeBar('q13Chart',
                     ['A', 'B', 'C', 'D'].map(k => `${k}: ${Q13_LABELS[k]}`),
-                    ['A', 'B', 'C', 'D'].map(k => agg.q13[k]));
+                    ['A', 'B', 'C', 'D'].map(k => agg.q13[k])
+                );
 
                 charts.daily = makeLine('dailyChart',
                     agg.dailySorted.map(([d]) => d),
-                    agg.dailySorted.map(([, v]) => v));
+                    agg.dailySorted.map(([, v]) => v)
+                );
 
                 renderPreview(filtered);
-
             } catch (err) {
                 console.error(err);
-                // ถ้า rules ยังไม่อนุญาต read จะเจอ PERMISSION_DENIED
-                alert('โหลดข้อมูลไม่สำเร็จ: ' + (err?.message || err) + '\nตรวจ Firestore Rules ให้ allow read กับคอลเลกชัน quiz_responses');
+                alert('โหลดข้อมูลไม่สำเร็จ: ' + (err?.message || err) + '\nตรวจ Firestore Rules ให้อนุญาต read กับคอลเลกชัน quiz_responses');
             } finally {
                 loadBtn.disabled = false; loadBtn.textContent = 'โหลดข้อมูล';
             }
@@ -568,9 +675,7 @@
 
         loadBtn.addEventListener('click', loadAndRender);
         exportBtn.addEventListener('click', () => exportExcel(lastRows));
-
-        // auto load ครั้งแรก
-        loadAndRender();
+        loadAndRender(); // auto load แรก
     </script>
 </body>
 
